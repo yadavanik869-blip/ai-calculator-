@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AI CALCULATOR</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; user-select: none; }
+    body { background-color: #d1d7db; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+    
+    .chat-container { width: 100%; height: 100%; max-width: 500px; display: flex; flex-direction: column; background-color: #efeae2; position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
+    
+    /* WHATSAPP TOP HEADER (BOLD ENGLISH) */
+    .chat-header { background-color: #008069; padding: 10px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(0,0,0,0.08); z-index: 10; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .avatar { width: 42px; height: 42px; border-radius: 50%; background: #ffffff; display: flex; justify-content: center; align-items: center; font-size: 1.4rem; color: #008069; box-shadow: 0 2px 4px rgba(0,0,0,0.15); }
+    .chat-title-box { flex: 1; display: flex; flex-direction: column; }
+    .chat-title { color: #ffffff; font-weight: 800; font-size: 1.05rem; letter-spacing: 0.5px; text-transform: uppercase; }
+    .chat-status { color: #d1f4ec; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* DELETE BUTTON IN HEADER */
+    .delete-header-btn { background: none; border: none; font-size: 1.35rem; color: #ffffff; cursor: pointer; padding: 6px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .delete-header-btn:active { background-color: rgba(255,255,255,0.2); transform: scale(0.92); }
+
+    /* CHAT SCREEN AREA */
+    .chat-body { flex: 1; padding: 16px 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background-color: #efeae2; background-image: radial-gradient(#d3cbbe 1.2px, transparent 0); background-size: 20px 20px; }
+    
+    .message-row { display: flex; width: 100%; }
+    .message-row.user { justify-content: flex-end; }
+    .message-row.ai { justify-content: flex-start; }
+
+    .message-bubble { max-width: 82%; padding: 8px 12px 6px; border-radius: 12px; position: relative; word-wrap: break-word; font-size: 0.95rem; line-height: 1.45; box-shadow: 0 1px 2px rgba(0,0,0,0.13); }
+    
+    /* हरा बॉक्स (USER) और पिंक बॉक्स (AI) */
+    .message-row.user .message-bubble { background-color: #d9fdd3; color: #111b21; border-top-right-radius: 2px; }
+    .message-row.ai .message-bubble { background-color: #ffd1dc; color: #111b21; border-top-left-radius: 2px; border: 1px solid #ffb6c1; }
+
+    .msg-text { margin-bottom: 2px; }
+    .msg-time { font-size: 0.65rem; color: #667781; text-align: right; margin-top: 2px; font-weight: 700; }
+
+    /* BOTTOM INPUT BAR */
+    .chat-footer { background-color: #f0f2f5; padding: 8px 10px; display: flex; align-items: center; gap: 8px; border-top: 1px solid #e9edef; }
+    .input-box { flex: 1; background-color: #ffffff; border-radius: 24px; padding: 10px 16px; color: #111b21; border: 1px solid #e9edef; outline: none; font-size: 0.95rem; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .input-box::placeholder { color: #8696a0; font-weight: 700; text-transform: uppercase; font-size: 0.8rem; }
+    .send-btn { width: 44px; height: 44px; border-radius: 50%; background-color: #00a884; border: none; display: flex; justify-content: center; align-items: center; cursor: pointer; color: #ffffff; font-size: 1.2rem; font-weight: 900; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    .send-btn:active { transform: scale(0.92); background-color: #008069; }
+
+    /* DELETE MODAL DIALOG */
+    .modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(2px); z-index: 100; justify-content: center; align-items: center; }
+    .modal-overlay.active { display: flex; }
+    .modal-box { background: #ffffff; width: 85%; max-width: 330px; border-radius: 14px; padding: 22px 18px 16px; box-shadow: 0 8px 25px rgba(0,0,0,0.25); text-align: center; }
+    .modal-title { font-weight: 900; font-size: 1.05rem; color: #111b21; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .modal-desc { font-weight: 700; font-size: 0.88rem; color: #54656f; margin-bottom: 22px; line-height: 1.4; text-transform: uppercase; }
+    .modal-buttons { display: flex; gap: 10px; }
+    .modal-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 900; cursor: pointer; text-transform: uppercase; }
+    .cancel-btn { background-color: #e9edef; color: #54656f; }
+    .ok-btn { background-color: #ea0038; color: #ffffff; }
+    .modal-btn:active { transform: scale(0.95); }
+  </style>
+</head>
+<body>
+<div class="chat-container">
+  <div class="chat-header">
+    <div class="avatar">🤖</div>
+    <div class="chat-title-box">
+      <span class="chat-title">AI CALCULATOR</span>
+      <span class="chat-status">MADE BY AMIT YADAV</span>
+    </div>
+    <button class="delete-header-btn" onclick="openDeleteModal()" title="Clear Chat History">🗑️</button>
+  </div>
+
+  <div class="chat-body" id="chatBody">
+    <div class="message-row ai" id="welcomeMsgRow">
+      <div class="message-bubble">
+        <div class="msg-text">नमस्ते! 🙏</div>
+        <div class="msg-time" id="initialTime">12:00 PM</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-footer">
+    <input type="text" id="userInput" class="input-box" placeholder="TYPE CALCULATION HERE..." onkeypress="handleKeyPress(event)" autofocus>
+    <button class="send-btn" onclick="sendMessage()">➤</button>
+  </div>
+
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal-box">
+      <div class="modal-title">CLEAR CHAT HISTORY?</div>
+      <div class="modal-desc">DO YOU WANT TO DELETE ALL MESSAGES FROM CHAT HISTORY?</div>
+      <div class="modal-buttons">
+        <button class="modal-btn cancel-btn" onclick="closeDeleteModal()">CANCEL</button>
+        <button class="modal-btn ok-btn" onclick="confirmDeleteHistory()">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  let isFirstUserMessage = true;
+
+  function formatCurrentTime() {
+    let now = new Date();
+    let hours = now.getHours();
+    let minutes = now.getMinutes();
+    let ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    minutes = minutes < 10 ? '0' + minutes : minutes;
+    return hours + ':' + minutes + ' ' + ampm;
+  }
+
+  document.getElementById('initialTime').innerText = formatCurrentTime();
+
+  function openDeleteModal() {
+    document.getElementById('deleteModal').classList.add('active');
+  }
+
+  function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.remove('active');
+  }
+
+  function confirmDeleteHistory() {
+    let chatBody = document.getElementById('chatBody');
+    chatBody.innerHTML = `
+      <div class="message-row ai" id="welcomeMsgRow">
+        <div class="message-bubble">
+          <div class="msg-text">नमस्ते! 🙏</div>
+          <div class="msg-time">${formatCurrentTime()}</div>
+        </div>
+      </div>
+    `;
+    isFirstUserMessage = true;
+    closeDeleteModal();
+  }
+
+  function appendMessage(text, sender) {
+    let chatBody = document.getElementById('chatBody');
+    let row = document.createElement('div');
+    row.className = `message-row ${sender}`;
+    
+    let bubble = document.createElement('div');
+    bubble.className = 'message-bubble';
+    
+    let msgText = document.createElement('div');
+    msgText.className = 'msg-text';
+    msgText.innerHTML = text;
+    
+    let timeText = document.createElement('div');
+    timeText.className = 'msg-time';
+    timeText.innerText = formatCurrentTime();
+    
+    bubble.appendChild(msgText);
+    bubble.appendChild(timeText);
+    row.appendChild(bubble);
+    chatBody.appendChild(row);
+    
+    chatBody.scrollTop = chatBody.scrollHeight;
+  }
+
+  function handleKeyPress(e) {
+    if (e.key === 'Enter') {
+      sendMessage();
+    }
+  }
+
+  function extractAnyItemName(text) {
+    let clean = text.toLowerCase()
+      .replace(/₹/g, ' ')
+      .replace(/\brs\.?\b|\brupees?\b|\brupya\b|\brupye\b|\bरुपया\b|\bरुपये\b|\bरु\b/g, ' ')
+      .replace(/\bkg\b|\bकेजी\b|\bकिलो\b|\bgram\b|\bgm\b|\bग्राम\b|\bg\b/g, ' ')
+      .replace(/\blitre\b|\bliter\b|\bलीटर\b|\bltr\b|\bml\b|\bमिलीलीटर\b|\bमिली\b/g, ' ')
+      .replace(/\d+(\.\d+)?/g, ' ')
+      .replace(/\b(me|mein|to|ka|ki|ke|hai|hain|milta|milte|milenge|milega|kitna|kitne|kitni|lagte|lagega|dena|hoga|bhi|aur|se|le|lo|jodo|ghatao|guna|bhag|tha|the|thi|pass|kharida|kharch|bacha|bache|bachega)\b/g, ' ')
+      .replace(/[^\w\s\u0900-\u097F]/g, ' ')
+      .trim();
+
+    let words = clean.split(/\s+/).filter(w => w.length > 1);
+    if (words.length > 0) {
+      return words[0];
+    }
+    return '';
+  }
+
+  function calculateAIResponse(query) {
+    let raw = query.toLowerCase().replace(/,/g, '');
+    let allNumbers = (raw.match(/\d+(\.\d+)?/g) || []).map(Number);
+
+    // 1. वॉलेट और खर्चे का हिसाब (मेरे पास ₹X था, Y खर्च किया तो कितना बचा?)
+    let isWalletQuery = raw.match(/पास|था|थी|the|pass|kharch|kharid|ख़रीदा|खरीदा|बचा|बचे|bache|bacha|bachega/);
+    if (isWalletQuery && allNumbers.length >= 2 && !raw.match(/kg|gram|लीटर|litre|ml|घंटे|hour/)) {
+      let totalAmount = allNumbers[0];
+      let expenses = allNumbers.slice(1);
+      let totalSpent = expenses.reduce((a, b) => a + b, 0);
+      let remaining = totalAmount - totalSpent;
+
+      if (expenses.length === 1) {
+        return `💵 <b>बचे हुए पैसे का हिसाब:</b><br>` +
+               `कुल रुपया = ₹${totalAmount}<br>` +
+               `खर्च किया = ₹${totalSpent}<br>` +
+               `👉 <b>अब आपके पास ₹${parseFloat(remaining.toFixed(2))} बचा है।</b>`;
+      } else {
+        let expenseDetails = expenses.map(e => `₹${e}`).join(' + ');
+        return `💵 <b>बचे हुए पैसे का हिसाब:</b><br>` +
+               `कुल रुपया = ₹${totalAmount}<br>` +
+               `कुल खर्च = ${expenseDetails} = ₹${totalSpent}<br>` +
+               `👉 <b>अब आपके पास ₹${parseFloat(remaining.toFixed(2))} बचा है।</b>`;
+      }
+    }
+
+    // 2. शुद्ध गणितीय समीकरण (उदा. 25+50, 100-30, 20*5, 500/2)
+    let mathSymbols = raw.replace(/x/g, '*').replace(/×/g, '*').replace(/÷/g, '/');
+    let mathMatch = mathSymbols.match(/(\d+(\.\d+)?\s*[\+\-\*\/]\s*\d+(\.\d+)?([\s\+\-\*\/0-9\.]*))/);
+    let hasUnits = raw.match(/kg|gram|gm|लीटर|litre|liter|ml|घंटे|hour|मिनट|minute|milta|milega/);
+
+    if (mathMatch && !hasUnits && !raw.includes('%')) {
+      try {
+        let evaluated = Function('"use strict";return (' + mathMatch[1] + ')')();
+        if (evaluated !== undefined && !isNaN(evaluated) && isFinite(evaluated)) {
+          let ans = Number.isInteger(evaluated) ? evaluated : parseFloat(evaluated.toFixed(4));
+          return `🔢 <b>गणितीय परिणाम:</b><br>${mathMatch[1]} = <b>${ans}</b>`;
+        }
+      } catch (e) {}
+    }
+
+    // 3. बोलचाल में जोड़, घटाव, गुणा, भाग
+    if (allNumbers.length >= 2 && !hasUnits && !raw.includes('%')) {
+      let n1 = allNumbers[0];
+      let n2 = allNumbers[1];
+
+      if (raw.match(/जोड़|jod|plus|add|\+/)) {
+        return `➕ <b>जोड़ परिणाम:</b><br>${n1} + ${n2} = <b>${parseFloat((n1 + n2).toFixed(4))}</b>`;
+      }
+      if (raw.match(/घटा|ghata|minus|sub|\-/)) {
+        return `➖ <b>घटाव परिणाम:</b><br>${n1} - ${n2} = <b>${parseFloat((n1 - n2).toFixed(4))}</b>`;
+      }
+      if (raw.match(/गुणा|guna|multiply|into|\*|×/)) {
+        return `✖️ <b>गुणा परिणाम:</b><br>${n1} × ${n2} = <b>${parseFloat((n1 * n2).toFixed(4))}</b>`;
+      }
+      if (raw.match(/भाग|bhag|divide|\/|÷/)) {
+        if (n2 === 0) return `⚠️ शून्य (0) से भाग नहीं दिया जा सकता।`;
+        return `➗ <b>भाग परिणाम:</b><br>${n1} ÷ ${n2} = <b>${parseFloat((n1 / n2).toFixed(4))}</b>`;
+      }
+    }
+
+    // 4. प्रतिशत और डिस्काउंट गणना
+    if (raw.includes('%') || raw.includes('प्रतिशत') || raw.includes('percent')) {
+      let nums = raw.match(/\d+(\.\d+)?/g);
+      if (nums && nums.length >= 2) {
+        let val = parseFloat(nums[0]);
+        let pct = parseFloat(nums[1]);
+        if (raw.indexOf(nums[1]) < raw.indexOf('%') && raw.indexOf(nums[0]) > raw.indexOf('%')) {
+          let temp = val; val = pct; pct = temp;
+        }
+        let res = (val * pct) / 100;
+        let finalAfterDiscount = val - res;
+        return `📊 <b>प्रतिशत गणना:</b><br>₹${val} का ${pct}% = <b>₹${parseFloat(res.toFixed(2))}</b><br>👉 छूट के बाद मूल्य = <b>₹${parseFloat(finalAfterDiscount.toFixed(2))}</b>`;
+      }
+    }
+
+    let item = extractAnyItemName(query);
+    let itemLabel = item ? ` ${item}` : '';
+
+    // 5. स्मार्ट यूनिट डिटेक्टर (Litre, KG, Gram, ML, Piece)
+    let isLitre = raw.match(/litre|liter|लीटर|ltr/);
+    let isMl = raw.match(/ml|मिली|मिलीलीटर/);
+    let isKg = raw.match(/kg|केजी|किलो|kilogram/);
+    let isGram = raw.match(/gram|ग्राम|gm|g\b/);
+
+    let moneyMatches = [];
+    let moneyRegex = /(?:₹|rs\.?|rupees|rupee|rupya|rupye|रुपये|रुपया|रु)\s*(\d+(\.\d+)?)|(\d+(\.\d+)?)\s*(?:₹|rs\.?|rupees|rupee|rupya|rupye|रुपये|रुपया|रु)/gi;
+    let mMatch;
+    while ((mMatch = moneyRegex.exec(raw)) !== null) {
+      let val = parseFloat(mMatch[1] || mMatch[3]);
+      if (!moneyMatches.includes(val)) moneyMatches.push(val);
+    }
+
+    // 5A. तरल गणना (दूध, तेल, पानी)
+    if (isLitre || isMl) {
+      if (moneyMatches.length >= 2) {
+        let p1 = moneyMatches[0];
+        let p2 = moneyMatches[1];
+        let qty = 1;
+        for (let num of allNumbers) {
+          if (num !== p1 && num !== p2) {
+            qty = num;
+            break;
+          }
+        }
+        let totalLitres = (qty / p1) * p2;
+        if (totalLitres < 1) {
+          let totalMl = totalLitres * 1000;
+          return `📊 <b>गणना परिणाम:</b><br>₹${p1} में = ${qty} लीटर${itemLabel} मिलता है<br>👉 <b>₹${p2} में = ${parseFloat(totalMl.toFixed(2))} मिलीलीटर (ml)${itemLabel}</b> मिलेगा।`;
+        } else {
+          return `📊 <b>गणना परिणाम:</b><br>₹${p1} में = ${qty} लीटर${itemLabel} मिलता है<br>👉 <b>₹${p2} में = ${parseFloat(totalLitres.toFixed(2))} लीटर${itemLabel}</b> मिलेगा।`;
+        }
+      } else if (isMl && allNumbers.length >= 2) {
+        let mlVal = isMl ? parseFloat(raw.match(/(\d+(\.\d+)?)\s*(?:ml|मिली)/)[1]) : 250;
+        let rate = moneyMatches[0] || allNumbers.find(n => n !== mlVal && n !== 1) || allNumbers[0];
+        let pricePerMl = rate / 1000;
+        let ans = pricePerMl * mlVal;
+        return `📊 <b>गणना परिणाम:</b><br>1 लीटर${itemLabel} का मूल्य = ₹${rate}<br>👉 <b>${mlVal} ml${itemLabel} का मूल्य = ₹${parseFloat(ans.toFixed(2))}</b> होगा।`;
+      }
+    }
+
+    // 5B. किलोग्राम और ग्राम गणना
+    if (isKg || isGram) {
+      if (moneyMatches.length >= 2) {
+        let p1 = moneyMatches[0];
+        let p2 = moneyMatches[1];
+        let qty = 1;
+        for (let num of allNumbers) {
+          if (num !== p1 && num !== p2) {
+            qty = num;
+            break;
+          }
+        }
+        let totalKg = (qty / p1) * p2;
+        if (totalKg < 1) {
+          let totalGm = totalKg * 1000;
+          return `📊 <b>गणना परिणाम:</b><br>₹${p1} में = ${qty} केजी${itemLabel} मिलता है<br>👉 <b>₹${p2} में = ${parseFloat(totalGm.toFixed(2))} ग्राम${itemLabel}</b> मिलेगा।`;
+        } else {
+          return `📊 <b>गणना परिणाम:</b><br>₹${p1} में = ${qty} केजी${itemLabel} मिलता है<br>👉 <b>₹${p2} में = ${parseFloat(totalKg.toFixed(2))} केजी${itemLabel}</b> मिलेगा।`;
+        }
+      } else if (isGram && allNumbers.length >= 2) {
+        let gmVal = parseFloat(raw.match(/(\d+(\.\d+)?)\s*(?:gram|ग्राम|gm|g\b)/)[1]);
+        let rate = moneyMatches[0] || allNumbers.find(n => n !== gmVal && n !== 1) || allNumbers[0];
+        let pricePerGm = rate / 1000;
+        let ans = pricePerGm * gmVal;
+        return `📊 <b>गणना परिणाम:</b><br>1 केजी${itemLabel} का मूल्य = ₹${rate}<br>👉 <b>${gmVal} ग्राम${itemLabel} का मूल्य = ₹${parseFloat(ans.toFixed(2))}</b> होगा।`;
+      }
+    }
+
+    // 5C. समय और मजदूरी गणना
+    if (raw.includes('घंटे') || raw.includes('घंटा') || raw.includes('hour') || raw.includes('मिनट') || raw.includes('minute') || raw.includes('min')) {
+      let targetMinMatch = raw.match(/(\d+(\.\d+)?)\s*(?:मिनट|minute|min)/);
+      let hourMatch = raw.match(/(\d+(\.\d+)?)\s*(?:घंटे|घंटा|hour|hr)/);
+
+      if (targetMinMatch && allNumbers.length >= 2) {
+        let targetMins = parseFloat(targetMinMatch[1]);
+        let baseHours = hourMatch ? parseFloat(hourMatch[1]) : 1;
+        let rate = moneyMatches[0] || allNumbers.find(n => n !== targetMins && (!hourMatch || n !== baseHours)) || allNumbers[0];
+
+        if (rate > 0) {
+          let ratePerMinute = rate / (baseHours * 60);
+          let finalAns = (ratePerMinute * targetMins).toFixed(2);
+          return `⏱️ <b>समय गणना परिणाम:</b><br>${baseHours} घंटे का = ₹${rate}<br>👉 <b>${targetMins} मिनट का = ₹${parseFloat(finalAns)}</b> बनेगा।`;
+        }
+      }
+    }
+
+    // 6. वस्तु/पीस/चॉकलेट/टॉफी हिसाब (ऐकिक नियम)
+    if (allNumbers.length >= 3) {
+      let p1, q1, p2;
+      if (moneyMatches.length >= 2) {
+        p1 = moneyMatches[0];
+        p2 = moneyMatches[1];
+        q1 = allNumbers.find(n => n !== p1 && n !== p2) || allNumbers[1];
+      } else {
+        p1 = allNumbers[0];
+        q1 = allNumbers[1];
+        p2 = allNumbers[2];
+      }
+
+      let totalItems = (q1 / p1) * p2;
+      let rounded = Number.isInteger(totalItems) ? totalItems : parseFloat(totalItems.toFixed(2));
+      let displayUnit = item || 'सामान';
+
+      return `📊 <b>गणना परिणाम:</b><br>₹${p1} में = ${q1} ${displayUnit} मिलता है<br>👉 <b>₹${p2} में = ${rounded} ${displayUnit}</b> मिलेगा।`;
+    }
+
+    return `क्षमा करें, कृपया प्रश्न में संख्याएं स्पष्ट लिखें। जैसे:<br>• <i>मेरे पास ₹1000 था मैंने 400 का सामान खरीदा तो कितना बचा?</i><br>• <i>50 + 20 या 100 में से 30 घटाओ</i>`;
+  }
+
+  function sendMessage() {
+    let input = document.getElementById('userInput');
+    let text = input.value.trim();
+    if (!text) return;
+
+    if (isFirstUserMessage) {
+      let welcomeRow = document.getElementById('welcomeMsgRow');
+      if (welcomeRow) {
+        welcomeRow.remove();
+      }
+      isFirstUserMessage = false;
+    }
+
+    appendMessage(text, 'user');
+    input.value = '';
+
+    setTimeout(() => {
+      let reply = calculateAIResponse(text);
+      appendMessage(reply, 'ai');
+    }, 400);
+  }
+</script>
+</body>
+</html>
